@@ -12,9 +12,11 @@ class Shiftplan(object):
     SHIFT_LATE = 1;
     SHIFT_ONCALL = 2;
 
-    SCORE_PENALIZE = 20
-    SCORE_PENALIZE_WEEKEND = 50
-    SCORE_AWARD = 10
+    SCORE_PENALIZE_ONCALL = 30
+    SCORE_PENALIZE_LATE = 20
+    SCORE_PENALIZE_NOSHIFT = 40
+    SCORE_PENALIZE_WEEKEND = 30
+    SCORE_AWARD = 50
     SCORE_INITIAL = 10
 
     # class variables
@@ -48,34 +50,43 @@ class Shiftplan(object):
         weekendCount = 0
         score = self.days * len(self.shifts) * self.SCORE_INITIAL
 
-        # oncall every day, initial penalization
-        count = ch.countGenes(self.SHIFT_ONCALL)
-        if(count != self.days):
-            score -= math.fabs(self.days - count) * self.SCORE_PENALIZE
-
         for i in range(self.days):
             # one late each working day
-            count = self.countShiftsPerDay(self.SHIFT_LATE, i)
-            if(count > 1):
-                score -= (count - 1) * self.SCORE_PENALIZE
+            if(not self.isWeekend(i)):
+                count = self.countShiftsPerDay(self.SHIFT_LATE, i)
+                if(count > 1):
+                    score -= (count - 1) * self.SCORE_PENALIZE_LATE
 
             # one oncall every day
             count = self.countShiftsPerDay(self.SHIFT_ONCALL, i)
             if(count > 1):
-                score -= (count - 1) * self.SCORE_PENALIZE
+                score -= (count - 1) * self.SCORE_PENALIZE_ONCALL
 
+            if(count < 1):
+                score -= self.SCORE_PENALIZE_NOSHIFT
+
+            count = self.countShiftsPerDay(self.SHIFT_LATE, i)
             # no late on weekend
             if(self.isWeekend(i)):
                 weekendCount += 1
-                count = self.countShiftsPerDay(self.SHIFT_LATE, i)
                 score -= self.SCORE_PENALIZE_WEEKEND
+            else:
+                if(count < 1):
+                    score -= self.SCORE_PENALIZE_NOSHIFT
 
             # evenly distributed oncall weekends
             # TODO
 
+        # shift every day except weekends
         count = ch.countGenes(self.SHIFT_LATE)
         if(count != (self.days - weekendCount)):
-            score -= math.fabs(self.days - count - weekendCount) * self.SCORE_PENALIZE
+            score -= math.fabs(self.days - count - weekendCount) * self.SCORE_PENALIZE_LATE
+            score = 0
+
+        # oncall every day, initial penalization
+        count = ch.countGenes(self.SHIFT_ONCALL)
+        if(count != self.days):
+            score = 0
 
         if(score < 0):
             return 0

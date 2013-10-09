@@ -9,11 +9,10 @@ class Evolution(object):
     """docstring for Evolution"""
 
     # CONSTANTS
-    INITIAL_POPULATION_SIZE = 10
-    TAKEOVER_POPULATION_SIZE = 10
-    SELECT_BEST_COUNT = 2
-    SELECT_WORST_COUNT = 2
-    GENERATE_NEW_COUNT = 10
+    INITIAL_POPULATION_SIZE = 100
+    TAKEOVER_POPULATION_SIZE = 30
+    SELECT_BEST_COUNT = 20
+    SELECT_WORST_COUNT = 10
 
     SHIFT_NOSHIFT = 0
     SHIFT_LATE = 1
@@ -42,31 +41,35 @@ class Evolution(object):
 
         newPopulation = []
 
-        # generate new individuals
-        newPopulation.extend(self.generatePopulation(self.GENERATE_NEW_COUNT))
-
         # # add old population
         newPopulation.extend(self.population)
+
+        # generate new individuals
+        newPopulation.extend(self.generatePopulation(self.INITIAL_POPULATION_SIZE - len(self.population)))
 
         # # evaluate and sort
         newPopulation = self.evaluateAndSort(newPopulation)
 
         best = []
-        # select best 20
+        # select best
         best.extend(newPopulation[0:self.SELECT_BEST_COUNT])
 
         worst = []
-        # select worst 20
+        # select worst
         worst.extend(newPopulation[len(newPopulation) - self.SELECT_WORST_COUNT : self.SELECT_WORST_COUNT])
 
         # genetic operators
         # NONE ATM
 
         # crossbreed
-        newPopulation.extend(self.crossbreed(best, newPopulation, int(self.days / 3)))
+        # newPopulation.extend(self.crossbreed(best, newPopulation, 2))
 
         # # mutate
-        newPopulation.extend(self.mutate(best, 30, int(self.days / 3)))
+        newPopulation.extend(self.mutate(best, 30, 3))
+
+        # newPopulation.extend(self.mutate(newPopulation, 10, 1))
+
+
 
         # # evaluate
         newPopulation = self.evaluateAndSort(newPopulation)
@@ -74,12 +77,7 @@ class Evolution(object):
         # # substitute
         self.population = []
 
-        # take 100 to new
-        #   if dont have 100, generate rest to have 100
-        if(len(newPopulation) < self.TAKEOVER_POPULATION_SIZE):
-            newPopulation.extend(self.generatePopulation(self.TAKEOVER_POPULATION_SIZE - len(newPopulation)))
-
-        self.population = self.evaluateAndSort(newPopulation[0 : self.TAKEOVER_POPULATION_SIZE])
+        self.population = self.evaluateAndSort(newPopulation)[0 : self.SELECT_BEST_COUNT]
 
     def createFirstPopulation(self):
         if(len(self.population) == 0):
@@ -142,18 +140,16 @@ class Evolution(object):
         newPopulation = []
 
         for i in range(int(len(population) * percentage)):
-            randomNumer = random.randint(0, len(population) - 1)
+            place1 = random.randint(0, population[0].getSize() - 1)
+            place2 = random.randint(0, population[0].getSize() - 1)
+            randomNumber = random.randint(0, len(population) - 1)
             # WARNING, moze sa to dokaslat tu
-            victim = Chromosome(population[randomNumer].chromo)
+            victim = deepcopy(population[randomNumber])
 
             for j in range(mutationSize):
-                mutationPlace = random.randint(0, self.days - 1)
-
-                mutationSource = random.randint(0, self.workers - 1) * mutationPlace
-                mutationDest = random.randint(0, self.workers - 1) * mutationPlace
-
-                mutatedGene = victim.getGene(mutationSource)
-                victim.changeGene(mutatedGene, mutationDest)
+                originalGene = victim.getGene(place1)
+                victim.changeGene(victim.getGene(place2), place1)
+                victim.changeGene(originalGene, place2)
 
             newPopulation.append(victim)
 
