@@ -1,6 +1,19 @@
 from classes.evolution import Evolution
+from classes.shiftplan import Shiftplan
 
 if  __name__ =='__main__':
-      evolution = Evolution(10, 2013, 2)
-      evolution.evolve(1)
-      print(evolution.population)
+	year = 2013
+	month = 10
+	workers = 2
+
+	sh = Shiftplan()
+	sh.setParameters(year, month, workers)
+
+	evolution = Evolution(year, month, workers, sh.evaluate)
+	evolution.evolve(50)
+
+	sh.loadChromosome(evolution.population[0])
+	print(sh.renderToString())
+	print(sh.evaluate(evolution.population[0]))
+      # for chromosome in evolution.population:
+      # 	print(chromosome.chromo)

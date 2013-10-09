@@ -20,11 +20,9 @@ class Chromosome(object):
 
 	def getRandomPositionByGene(self, desiredGene):
 		while True:
-			randomNumber = random.randint(0, self.getSize() - 1)
-			if(self.chromo[randomNumber] == desiredGene):
-				break
-
-		return randomNumber
+			randomPosition = random.randint(0, self.getSize() - 1)
+			if(self.getGene(randomPosition) == desiredGene):
+				return randomPosition
 
 	def countGenes(self, needleGene):
 		return self.chromo.count(needleGene)
