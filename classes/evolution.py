@@ -1,4 +1,5 @@
 import random
+import collections
 from calendar import monthrange
 from datetime import date
 from copy import deepcopy
@@ -35,13 +36,18 @@ class Evolution(object):
         self.days = monthrange(year, month)[1]
         self.evalFunction = evaluationFunction
 
+    def evalFirstTen(self, pop):
+        out = []
+        for i in range(10):
+            out.append(self.evaluate(pop[i]))
+        return out
+
     def evolveSingle(self):
         # create new population if none present
         self.createFirstPopulation()
 
         newPopulation = []
-
-        # # add old population
+        # add old population
         newPopulation.extend(self.population)
 
         # generate new individuals
@@ -50,13 +56,13 @@ class Evolution(object):
         # # evaluate and sort
         newPopulation = self.evaluateAndSort(newPopulation)
 
-        best = []
         # select best
-        best.extend(newPopulation[0:self.SELECT_BEST_COUNT])
+        best = []
+        best.extend(deepcopy(newPopulation[0:self.SELECT_BEST_COUNT]))
 
-        worst = []
         # select worst
-        worst.extend(newPopulation[len(newPopulation) - self.SELECT_WORST_COUNT : self.SELECT_WORST_COUNT])
+        worst = []
+        worst.extend(deepcopy(newPopulation[len(newPopulation) - self.SELECT_WORST_COUNT : self.SELECT_WORST_COUNT]))
 
         # genetic operators
         # NONE ATM
@@ -64,20 +70,20 @@ class Evolution(object):
         # crossbreed
         # newPopulation.extend(self.crossbreed(best, newPopulation, 2))
 
-        # # mutate
-        newPopulation.extend(self.mutate(best, 30, 3))
+        # mutate
+        newPopulation.extend(self.mutate(best, 100, 1))
+        newPopulation.extend(self.mutate(worst, 100, 1))
+        newPopulation.extend(self.mutate(newPopulation, 10, 5))
 
-        # newPopulation.extend(self.mutate(newPopulation, 10, 1))
 
 
-
-        # # evaluate
+        # evaluate
         newPopulation = self.evaluateAndSort(newPopulation)
 
-        # # substitute
+        # substitute
         self.population = []
+        self.population = newPopulation[0 : self.SELECT_BEST_COUNT]
 
-        self.population = self.evaluateAndSort(newPopulation)[0 : self.SELECT_BEST_COUNT]
 
     def createFirstPopulation(self):
         if(len(self.population) == 0):
@@ -110,14 +116,30 @@ class Evolution(object):
             return False
 
     def generateSingle(self):
+        # AWESOME GENERATOR FINALLY WORKING AS INTENDED
+        # DO NOT MODIFY !
         single = Chromosome([self.SHIFT_NOSHIFT] * (self.workers * self.days))
-
+        worker = None
         for i in range(self.days):
-
             if(not self.isWeekend(i)):
-                single.changeGene(self.SHIFT_LATE, single.getRandomPositionByGene(self.SHIFT_NOSHIFT))
+                while True:
+                    # choose worker
+                    worker = random.randint(0, self.workers - 1)
+                    position = worker * self.days + i
+                    # check if empty
+                    if(single.getGene(position) == self.SHIFT_NOSHIFT):
+                        # insert late
+                        single.changeGene(self.SHIFT_LATE, position)
+                        break
 
-            single.changeGene(self.SHIFT_ONCALL, single.getRandomPositionByGene(self.SHIFT_NOSHIFT))
+            while True:
+                # choose worker
+                worker = random.randint(0, self.workers - 1)
+                position = worker * self.days + i
+                if(single.getGene(position) == self.SHIFT_NOSHIFT):
+                    # insert oncall
+                    single.changeGene(self.SHIFT_ONCALL, position)
+                    break
         return single
 
     def generatePopulation(self, populationSize):
@@ -132,27 +154,45 @@ class Evolution(object):
         return self.evalFunction(chromosome)
 
     def evaluateAndSort(self, population):
-        return sorted(population, key=lambda Ch: self.evaluate(Ch))
+        return sorted(population, key=lambda Ch: self.evaluate(Ch), reverse=True)
 
 
     def mutate(self, population, percentage, mutationSize):
-        # p = population[:]
         newPopulation = []
 
+        worker1 = None
+        worker2 = None
+
+        day1 = None
+        day2 = None
+
         for i in range(int(len(population) * percentage)):
-            place1 = random.randint(0, population[0].getSize() - 1)
-            place2 = random.randint(0, population[0].getSize() - 1)
-            randomNumber = random.randint(0, len(population) - 1)
-            # WARNING, moze sa to dokaslat tu
-            victim = deepcopy(population[randomNumber])
+            # choose random chromosome
+            randomChromo = random.randint(0, len(population) - 1)
+            chromo = deepcopy(population[randomChromo])
 
-            for j in range(mutationSize):
-                originalGene = victim.getGene(place1)
-                victim.changeGene(victim.getGene(place2), place1)
-                victim.changeGene(originalGene, place2)
+            # choose 2 different workers
+            while True:
+                worker1 = random.randint(0, self.workers - 1)
+                worker2 = random.randint(0, self.workers - 1)
+                if(worker1 != worker2):
+                    break
 
-            newPopulation.append(victim)
+            # choose 2 random days (can be same)
+            day1 = random.randint(0, self.days - 1)
+            day2 = random.randint(0, self.days - 1)
 
+            # calculate positions
+            position1 = self.days * worker1 + day1
+            position2 = self.days * worker2 + day2
+
+            # swap shifts
+            temp = chromo.getGene(position1)
+            chromo.changeGene(chromo.getGene(position2), position1)
+            chromo.changeGene(temp, position2)
+
+            # add to population
+            newPopulation.append(chromo)
         return newPopulation
 
     def crossbreed(self, bestIndividuals, population, crossbreedSize):

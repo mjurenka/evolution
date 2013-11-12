@@ -12,12 +12,19 @@ class Shiftplan(object):
     SHIFT_LATE = 1;
     SHIFT_ONCALL = 2;
 
-    SCORE_PENALIZE_ONCALL = 30
-    SCORE_PENALIZE_LATE = 20
-    SCORE_PENALIZE_NOSHIFT = 40
-    SCORE_PENALIZE_WEEKEND = 30
-    SCORE_AWARD = 50
-    SCORE_INITIAL = 10
+
+    SCORE_INITIAL = 1000
+
+    SCORE_PENALIZE_LATE_OVER_LIMIT = -10
+    SCORE_PENALIZE_LATE_WEEKEND = -20
+    SCORE_PENALIZE_LATE_UNDER_LIMIT = -20
+
+    SCORE_PENALIZE_ONCALL_OVER_LIMIT = -10
+    SCORE_PENALIZE_ONCALL_UNDER_LIMIT = -20
+
+    SCORE_AWARD_LATE_EXACT_LIMIT = 0
+    SCORE_AWARD_ONCALL_EXACT_LIMIT = 0
+
 
     # class variables
     days = 0
@@ -48,39 +55,49 @@ class Shiftplan(object):
 
         count = 0
         weekendCount = 0
-        score = self.days * len(self.shifts) * self.SCORE_INITIAL
+        score = self.SCORE_INITIAL
+
+        # one late each day
+        # one oncall each day
+        # no late on weekend
+        # force oncall on weekend
 
         for i in range(self.days):
-            # one late each working day
-            if(not self.isWeekend(i)):
-                count = self.countShiftsPerDay(self.SHIFT_LATE, i)
-                if(count > 1):
-                    score -= (count - 1) * self.SCORE_PENALIZE_LATE
-
-            # one oncall every day
-            count = self.countShiftsPerDay(self.SHIFT_ONCALL, i)
-            if(count > 1):
-                score -= (count - 1) * self.SCORE_PENALIZE_ONCALL
-
-            if(count < 1):
-                score -= self.SCORE_PENALIZE_NOSHIFT
-
-            count = self.countShiftsPerDay(self.SHIFT_LATE, i)
-            # no late on weekend
             if(self.isWeekend(i)):
                 weekendCount += 1
-                score -= self.SCORE_PENALIZE_WEEKEND
+
+            # ---------- LATE -------------
+            # one late day
+            count = self.countShiftsPerDay(self.SHIFT_LATE, i)
+
+            if(count > 1):
+                score += count * self.SCORE_PENALIZE_LATE_OVER_LIMIT
+            elif(count == 1):
+                score += self.SCORE_AWARD_LATE_EXACT_LIMIT
             else:
-                if(count < 1):
-                    score -= self.SCORE_PENALIZE_NOSHIFT
+                score += self.SCORE_PENALIZE_LATE_UNDER_LIMIT
+
+            # no late on weekend
+            if(self.isWeekend(i)):
+                if(count > 0):
+                    score += self.SCORE_PENALIZE_LATE_WEEKEND
+
+            # ---------- ONCALL -------------
+            # one oncall each day
+            count = self.countShiftsPerDay(self.SHIFT_ONCALL, i)
+            if(count > 1):
+                score += count * self.SCORE_PENALIZE_ONCALL_OVER_LIMIT
+            elif(count == 1):
+                score += self.SCORE_AWARD_ONCALL_EXACT_LIMIT
+            else:
+                score += self.SCORE_PENALIZE_ONCALL_UNDER_LIMIT
 
             # evenly distributed oncall weekends
             # TODO
 
-        # shift every day except weekends
+        # late shift every day except weekends
         count = ch.countGenes(self.SHIFT_LATE)
         if(count != (self.days - weekendCount)):
-            score -= math.fabs(self.days - count - weekendCount) * self.SCORE_PENALIZE_LATE
             score = 0
 
         # oncall every day, initial penalization
@@ -95,7 +112,8 @@ class Shiftplan(object):
 
     def renderToString(self):
             output = ""
-
+            oncallCount = 0
+            lateCount = 0
             # header
             for i in range(self.days):
                 if(self.isWeekend(i)):
@@ -116,12 +134,16 @@ class Shiftplan(object):
                 for day in range(self.days):
                     if(s[day][worker] == self.SHIFT_LATE):
                         c = "L"
+                        lateCount += 1
                     elif(s[day][worker] == self.SHIFT_ONCALL):
                         c = "O"
+                        oncallCount += 1
                     else:
                         c = "-"
                     output += " " + c + " "
                 output += "\n"
+
+            output += "O: " + str(oncallCount) + "\nL: " + str(lateCount)
 
             return output
 
