@@ -67,8 +67,9 @@ class Evolution(object):
         # genetic operators
         # NONE ATM
 
-        # crossbreed
+        # # crossbreed
         # newPopulation.extend(self.crossbreed(best, newPopulation, 2))
+        # newPopulation.extend(self.crossbreed(worst, newPopulation, 2))
 
         # mutate
         newPopulation.extend(self.mutate(best, 100, 1))
@@ -195,30 +196,25 @@ class Evolution(object):
             newPopulation.append(chromo)
         return newPopulation
 
-    def crossbreed(self, bestIndividuals, population, crossbreedSize):
+    def crossbreed(self, bestIndividuals, population, breedPercentage):
         newPopulation = []
+        selectionMask = []
 
         for individual in bestIndividuals:
-            day = random.randint(0, self.days - 1)
-            person = random.randint(0, self.workers - 1) * self.days
-            randomNumber = random.randint(0, len(population) - 1)
+            selectionMask = [random.randint(0, 1) for _ in range(self.days * self.workers)]
+            randomIndividual = random.randint(0, len(population) - 1)
+            randomIndividual = population[randomIndividual]
 
-            child = deepcopy(individual)
-            parent1 = deepcopy(population[randomNumber])
+            child = Chromosome([self.SHIFT_NOSHIFT] * (self.workers * self.days))
 
-            for i in range(crossbreedSize):
-                child.changeGene(parent1.getGene(person + day), person + day)
+            for index, value in enumerate(selectionMask):
+                gene = None
+                if(value == 0):
+                    gene = individual.getGene(index)
+                else:
+                    gene = randomIndividual.getGene(index)
+
+                child.changeGene(gene, index)
 
             newPopulation.append(child)
-
         return newPopulation
-
-    def fuseChromos(firstCH, secondCH, fusionPosition):
-        fusedChromo = Chromosome()
-        for i in range(firstCH.getSize()):
-            if(i < fusionPosition):
-                fusedChromo.addGene(firstCH.getGene(i))
-            else:
-                fusedChromo.addGene(secondCH.getGene(i))
-
-        return fusedChromo

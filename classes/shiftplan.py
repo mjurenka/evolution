@@ -12,6 +12,9 @@ class Shiftplan(object):
     SHIFT_LATE = 1;
     SHIFT_ONCALL = 2;
 
+    SPACING_ONCALL = 3
+    SPACING_LATE = 3
+
 
     SCORE_INITIAL = 1000
 
@@ -21,6 +24,9 @@ class Shiftplan(object):
 
     SCORE_PENALIZE_ONCALL_OVER_LIMIT = -10
     SCORE_PENALIZE_ONCALL_UNDER_LIMIT = -20
+
+    SCORE_PENALIZE_SPACING_ONCALL = -30
+    SCORE_PENALIZE_SPACING_LATE = -30
 
     SCORE_AWARD_LATE_EXACT_LIMIT = 0
     SCORE_AWARD_ONCALL_EXACT_LIMIT = 0
@@ -32,6 +38,7 @@ class Shiftplan(object):
     month = 0
     workers = 0
     shifts = []
+    shiftsWorkers = []
 
     def setParameters(self, Year, Month, numberOfWorkers):
         self.year = Year
@@ -43,12 +50,39 @@ class Shiftplan(object):
         self.unloadChromosome()
         for i in range(self.days):
             self.shifts.append(ch.chromo[i::self.days])
+        for i in range(self.workers):
+            start = i * self.days
+            end = start + self.days
+            self.shiftsWorkers.append(ch.chromo[start:end])
 
     def unloadChromosome(self):
         self.shifts = []
 
     def countShiftsPerDay(self, shiftType, day):
         return self.shifts[day].count(shiftType)
+
+    def countShiftsPerWorker(self, shiftType, worker):
+        return self.shiftsWorkers[worker].count(shiftType)
+
+    def checkEqualAmount(self, chromosome, traitToCheck, allowedDifference):
+        # values = []
+        # for i in range(self.workers):
+        #     values.append(self.countShiftsPerWorker)
+        pass
+
+    def checkProximitySameTraits(self, chromosome, checkTrait, minProximity):
+        indexes = [i for i, x in enumerate(chromosome.chromo) if x == checkTrait]
+        first = True
+        for i, x in enumerate(indexes):
+            if(not first):
+                if( (x - indexes[i - 1]) > minProximity):
+                    # print("false")
+                    return False
+            else:
+                first = False
+        print("true")
+        return True
+
 
     def evaluate(self, ch):
         self.loadChromosome(ch)
@@ -95,15 +129,24 @@ class Shiftplan(object):
             # evenly distributed oncall weekends
             # TODO
 
-        # late shift every day except weekends
-        count = ch.countGenes(self.SHIFT_LATE)
-        if(count != (self.days - weekendCount)):
-            score = 0
+        # SPACING
+        for worker in range(self.workers):
+            if(not(self.checkProximitySameTraits(ch, self.SHIFT_LATE, self.SPACING_LATE))):
+                score += self.SCORE_PENALIZE_SPACING_LATE
 
-        # oncall every day, initial penalization
-        count = ch.countGenes(self.SHIFT_ONCALL)
-        if(count != self.days):
-            score = 0
+            if(not(self.checkProximitySameTraits(ch, self.SHIFT_ONCALL, self.SPACING_ONCALL))):
+                score += self.SCORE_PENALIZE_SPACING_ONCALL
+
+
+        # late shift every day except weekends
+        # count = ch.countGenes(self.SHIFT_LATE)
+        # if(count != (self.days - weekendCount)):
+        #     score = 0
+
+        # # oncall every day, initial penalization
+        # count = ch.countGenes(self.SHIFT_ONCALL)
+        # if(count != self.days):
+        #     score = 0
 
         if(score < 0):
             return 0
