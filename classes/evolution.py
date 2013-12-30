@@ -222,3 +222,16 @@ class Evolution(object):
                 fusedChromo.addGene(secondCH.getGene(i))
 
         return fusedChromo
+
+    def exportPopulation(self):
+        f = open('lastState.txt', 'w')
+        for chromo in self.population:
+            f.write(chromo.toString() + "\n")
+        f.close
+
+    def loadPopulation(self):
+        f = open('lastState.txt', 'r')
+        for line in f:
+            single = Chromosome(len(line))
+            single.fromString(line)
+            self.population.append(single)

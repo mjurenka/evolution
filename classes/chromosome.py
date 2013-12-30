@@ -30,3 +30,12 @@ class Chromosome(object):
 	def equals(self, otherChromosome):
 		compare = lambda x, y: collections.Counter(x) == collections.Counter(y)
 		return compare(self.chromo, otherChromosome)
+
+	def toString(self):
+		out = ""
+		for i in self.chromo:
+			out = out + str(i)
+		return out
+
+	def fromString(self, chString):
+		self.chromo = list(chString)

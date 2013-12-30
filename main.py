@@ -11,8 +11,12 @@ if  __name__ =='__main__':
 	sh.setParameters(year, month, workers)
 
 	evolution = Evolution(year, month, workers, sh.evaluate)
-	evolution.evolve(100)
+
+	evolution.loadPopulation()
+	evolution.evolve(10)
 
 	sh.loadChromosome(evolution.population[0])
 	print(sh.renderToString())
 	print(sh.evaluate(evolution.population[0]))
+
+	evolution.exportPopulation()
