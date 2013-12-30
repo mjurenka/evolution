@@ -13,7 +13,7 @@ if  __name__ =='__main__':
 	evolution = Evolution(year, month, workers, sh.evaluate)
 
 	evolution.loadPopulation()
-	evolution.evolve(10)
+	evolution.evolve(30)
 
 	sh.loadChromosome(evolution.population[0])
 	print(sh.renderToString())
