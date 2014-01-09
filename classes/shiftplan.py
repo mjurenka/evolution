@@ -13,8 +13,8 @@ class Shiftplan(object):
     SHIFT_LATE = 1;
     SHIFT_ONCALL = 2;
 
-    SPACING_ONCALL = 3
-    SPACING_LATE = 3
+    SPACING_ONCALL = 1
+    SPACING_LATE = 1
 
 
     SCORE_INITIAL = 1000
@@ -26,8 +26,8 @@ class Shiftplan(object):
     SCORE_PENALIZE_ONCALL_OVER_LIMIT = -10
     SCORE_PENALIZE_ONCALL_UNDER_LIMIT = -20
 
-    SCORE_PENALIZE_SPACING_ONCALL = -30
-    SCORE_PENALIZE_SPACING_LATE = -30
+    SCORE_PENALIZE_SPACING_ONCALL = -50
+    SCORE_PENALIZE_SPACING_LATE = -50
 
     SCORE_AWARD_LATE_EXACT_LIMIT = 0
     SCORE_AWARD_ONCALL_EXACT_LIMIT = 0
@@ -101,7 +101,6 @@ class Shiftplan(object):
                     return False
             else:
                 first = False
-        print("true")
         return True
 
 

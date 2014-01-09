@@ -1,5 +1,6 @@
 import random
 import collections
+import gc
 from calendar import monthrange
 from datetime import date
 from copy import deepcopy
@@ -78,7 +79,7 @@ class Evolution(object):
         # substitute
         self.population = []
         self.population = newPopulation[0 : self.SELECT_BEST_COUNT]
-
+        gc.collect()
 
     def createFirstPopulation(self):
         if(len(self.population) == 0):
@@ -125,6 +126,7 @@ class Evolution(object):
                 position = random.randint(0, self.chromoSize)
                 if(not position in usedPositions):
                     break
+<<<<<<< HEAD
             gene = offspring.getGene(position)
             if(gene == 1):
                 newGene = 0
@@ -150,3 +152,15 @@ class Evolution(object):
             interator = interator + 1
 
         return offspring
+    def exportPopulation(self):
+        f = open('lastState.txt', 'w')
+        for chromo in self.population:
+            f.write(chromo.toString() + "\n")
+        f.close
+
+    def loadPopulation(self):
+        f = open('lastState.txt', 'r')
+        for line in f:
+            single = Chromosome(len(line))
+            single.fromString(line)
+            self.population.append(single)
