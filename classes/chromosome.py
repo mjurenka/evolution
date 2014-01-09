@@ -3,12 +3,16 @@ import collections
 
 class Chromosome(object):
 	chromo = []
+	fitness = None
 	def __init__(self, ch = []):
 		self.chromo = ch
 
 	def getSize(self):
 		return len(self.chromo)
 
+	def getChromo(self):
+		return self.chromo
+		
 	def changeGene(self, singleGene, position):
 		self.chromo[position] = singleGene
 
@@ -24,9 +28,12 @@ class Chromosome(object):
 			if(self.getGene(randomPosition) == desiredGene):
 				return randomPosition
 
-	def countGenes(self, needleGene):
-		return self.chromo.count(needleGene)
-
 	def equals(self, otherChromosome):
 		compare = lambda x, y: collections.Counter(x) == collections.Counter(y)
 		return compare(self.chromo, otherChromosome)
+
+	def setFitness(self, fitness):
+		self.fitness = fitness
+
+	def getFitness(self):
+		return self.fitness

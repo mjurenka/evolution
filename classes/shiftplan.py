@@ -1,5 +1,6 @@
 from calendar import monthrange
 from datetime import date
+from bitstring import BitArray
 import math
 
 class Shiftplan(object):
@@ -37,23 +38,43 @@ class Shiftplan(object):
     year = 0
     month = 0
     workers = 0
+    bitSize = 0
     shifts = []
     shiftsWorkers = []
 
-    def setParameters(self, Year, Month, numberOfWorkers):
+    def setParameters(self, Year, Month, numberOfWorkers, bitSize):
         self.year = Year
         self.month = Month
         self.workers = numberOfWorkers
         self.days = monthrange(Year, Month)[1]
+        self.bitSize = bitSize
+
+    def getParameterCount(self):
+        return self.days * self.workers
 
     def loadChromosome(self, ch):
+        processedChromo = []
+        iterator = 0
+        traitStart = 0
+        for i in range(self.days * self.workers * self.bitSize):
+            if i % self.bitSize == 0:
+                binaryString = ''
+                for j in ch.getChromo()[traitStart:i]:
+                    binaryString = binaryString + str(j)
+
+                b = BitArray(bin=binaryString)
+                b.uint
+            else:
+                traitStart = i
+            
+
         self.unloadChromosome()
         for i in range(self.days):
-            self.shifts.append(ch.chromo[i::self.days])
+            self.shifts.append(processedChromo[i::self.days])
         for i in range(self.workers):
             start = i * self.days
             end = start + self.days
-            self.shiftsWorkers.append(ch.chromo[start:end])
+            self.shiftsWorkers.append(processedChromo[start:end])
 
     def unloadChromosome(self):
         self.shifts = []
