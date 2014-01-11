@@ -9,9 +9,18 @@ if  __name__ =='__main__':
 
 	sh = Shiftplan()
 
-	sh.setParameters(year, month, workers, 3)
+	sh.setParameters(year, month, workers, 2)
 	parCount = sh.getParameterCount()
-	print(parCount)
-	evolution = Evolution(parCount, 3, sh.evaluate)
-	evolution.evolve(1)
+	# print(parCount)
+	evolution = Evolution(parCount, 2, sh.evaluate)
+	evolution.loadPopulation()
+
+	evolution.evolve(500)
+
+	best = evolution.getBestSolution(0)
+	sh.loadChromosome(best)
+	print(sh.renderToString())
+	print(best.getFitness())
+
+	evolution.exportPopulation()
 

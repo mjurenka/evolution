@@ -4,6 +4,7 @@ import gc
 from calendar import monthrange
 from datetime import date
 from copy import deepcopy
+import time
 
 from classes.chromosome import Chromosome
 
@@ -11,11 +12,13 @@ class Evolution(object):
     """docstring for Evolution"""
 
     # CONSTANTS
-    INITIAL_POPULATION_SIZE = 10
-    TAKEOVER_POPULATION_SIZE = 1
-    SELECT_BEST_COUNT = 1
-    SELECT_WORST_COUNT = 1
+    INITIAL_POPULATION_SIZE = 100
+    SELECT_BEST_COUNT = 2
+    REMOVE_WORST_COUNT = 5
+    CROSSOVER_OFFSPRING_COUNT = 3
 
+    CROSSOVER_PERCENTAGE = .85
+    MUTATE_PERCENTAGE = .025
     # CLASS VARIABLES
     parCount = 0
     parBitSize = 0
@@ -24,6 +27,8 @@ class Evolution(object):
     population = []
     solutions = []
     evalFunction = None
+    roulette = []
+    importedGeneration = False
 
     def __init__(self, parameterCount, parameterBitSize, evaluationFunction):
         self.parCount = parameterCount
@@ -37,57 +42,132 @@ class Evolution(object):
             out.append(self.evaluate(pop[i]))
         return out
 
+    def rouletteSelectParents(self, population, selectSize):
+        valueList = []
+        for i in population:
+            fitness = i.getFitness()
+            valueList.append(fitness)
+
+        # output pairs of chromosomes
+        parentPairs = []
+        parentChromosomes = []
+        while len(parentPairs) < selectSize:
+            
+
+            chosenParents = []
+
+            while len(chosenParents) < 2:
+                # choose random number
+                randomValue = random.randint(0, sum(valueList))
+                # print(sum(valueList))
+
+                parentIndex = 0
+                bottomLimit = 0
+                for i in valueList:
+                    if(parentIndex == 0):
+                        bottomLimit = 0
+
+                   
+                    # upper limit
+                    upperIndex = parentIndex
+                    if(not(upperIndex + 1 >= len(valueList))):
+                        upperIndex = upperIndex + 1
+
+                    upperLimit = bottomLimit + valueList[upperIndex]
+
+                    # print(str(bottomLimit) + " > " + str(randomValue) + " > " + str(upperLimit))
+                    # if number is between two limits
+                    if((bottomLimit <= randomValue) and (randomValue < upperLimit)):
+                        break
+
+                    parentIndex = parentIndex + 1
+                    bottomLimit = bottomLimit + i
+
+                if(parentIndex == len(valueList)):
+                    parentIndex = parentIndex - 1
+
+                # now we have found our chosen parent
+                # we have to check, if its not the same we have already selected as first parent
+                if(not(parentIndex in chosenParents)):
+                    # we add him as chosen parent
+                    chosenParents.append(parentIndex)
+                    
+            parentPairs.append(chosenParents)
+
+            chromo1 = deepcopy(population[chosenParents[0]])
+            chromo2 = deepcopy(population[chosenParents[1]])
+            parentChromosomes.append([chromo1, chromo2])
+  
+        # self.roulette.extend(chosenParents)
+        # print(parentPairs)
+        return parentChromosomes
+
     def evolveSingle(self):
+        oldGeneration = self.population
+
         # create new population if none present
-        self.createFirstPopulation()
-        print(self.population[0].chromo)
-        newPopulation = []
-        # add old population
-        newPopulation.extend(self.population)
+        if(self.createFirstPopulation() or self.checkIfImported()):
+            # evaluate
+            oldGeneration = self.evaluateAndSort(oldGeneration)
 
-        # generate new individuals
-        newPopulation.extend(self.generatePopulation(self.INITIAL_POPULATION_SIZE - len(self.population)))
+        # elitism
+        self.elite = oldGeneration[0:self.SELECT_BEST_COUNT]
 
-        # # evaluate and sort
-        newPopulation = self.evaluateAndSort(newPopulation)
+        # remove worst
+        oldGeneration = oldGeneration[0:len(oldGeneration )- self.REMOVE_WORST_COUNT]
 
-        # select best
-        best = []
-        best.extend(deepcopy(newPopulation[0:self.SELECT_BEST_COUNT]))
+        # crossover 90% of pop
+        newPopulation = self.crossover(oldGeneration, self.CROSSOVER_PERCENTAGE)
+        # mutate 1% of population
+        newPopulation = self.mutatePopulation(newPopulation, self.MUTATE_PERCENTAGE)
+        # sometimes offspring copy of parent
 
-        # select worst
-        worst = []
-        worst.extend(deepcopy(newPopulation[len(newPopulation) - self.SELECT_WORST_COUNT : self.SELECT_WORST_COUNT]))
-
-        # genetic operators
-        # NONE ATM
-
-        # # crossbreed
-        # newPopulation.extend(self.crossbreed(best, newPopulation, 2))
-        # newPopulation.extend(self.crossbreed(worst, newPopulation, 2))
-
-        # mutate
-        # newPopulation.extend(self.mutate(best, 100, 1))
-        # newPopulation.extend(self.mutate(worst, 100, 1))
-        # newPopulation.extend(self.mutate(newPopulation, 10, 5))
-
-
+        # this is new generation done
+        # elitism append back
+        newPopulation.extend(self.elite)
 
         # evaluate
         newPopulation = self.evaluateAndSort(newPopulation)
 
-        # substitute
-        self.population = []
-        self.population = newPopulation[0 : self.SELECT_BEST_COUNT]
-        gc.collect()
+        # shrink population to initial size
+        if(len(newPopulation) > self.INITIAL_POPULATION_SIZE):
+            newPopulation = newPopulation[0:self.INITIAL_POPULATION_SIZE]
+
+        self.population = newPopulation
+#
+
+
 
     def createFirstPopulation(self):
         if(len(self.population) == 0):
             self.population.extend(self.generatePopulation(self.INITIAL_POPULATION_SIZE))
+            return True
+        else:
+            return False
+
+    def getBestFitness(self):
+        if(len(self.population)== 0):
+            return 0
+        else:
+            return self.population[0].getFitness()
 
     def evolve(self, evolutionCount):
+        fitness = 0
+        lastDelta = 0
         for i in range(evolutionCount):
+            if(fitness == self.getBestFitness()):
+                lastDelta = lastDelta + 1
+            else:
+                fitness = self.getBestFitness()
+                lastDelta = 0
+
+            print("Evolution: " + str(i) + " ")
+
+            start_time = time.time()
             self.evolveSingle()
+            elapsed_time = time.time() - start_time
+            
+            print("F: " + str(self.getBestFitness()) + "  ( " + str(lastDelta) + " )   " + str(elapsed_time) + " sec")
             self.counter += 1
 
     def getBestSolution(self, index):
@@ -97,7 +177,7 @@ class Evolution(object):
             return self.population[index]
     
     def generateSingle(self):
-        single = Chromosome([0] * self.chromoSize)
+        single = Chromosome()
         worker = None
         for i in range(self.chromoSize):
             single.addGene(random.randint(0, 1))
@@ -112,31 +192,75 @@ class Evolution(object):
         return newPopulation
 
     def evaluate(self, chromosome):
-        return self.evalFunction(chromosome)
+        fitness = self.evalFunction(chromosome)
+        chromosome.setFitness(fitness)
+        return fitness 
 
     def evaluateAndSort(self, population):
-        return sorted(population, key=lambda Ch: 0, reverse=True)
+        return sorted(population, key=lambda Ch: self.evaluate(Ch), reverse=True)
 
 
-    def mutateIndividual(self, individual, percentage):
-        offspring = Chromosome(individual.getChromo())
-        usedPositions = []
-        for i in range(self.chromoSize * percentage):
-            while True:
-                position = random.randint(0, self.chromoSize)
-                if(not position in usedPositions):
-                    break
-<<<<<<< HEAD
-            gene = offspring.getGene(position)
-            if(gene == 1):
-                newGene = 0
-            elif(gene == 0):
-                newGene = 1
+    def mutatePopulation(self, population, percentage):
+        geneList = []
+        for chromo in population:
+            geneList.extend(chromo.getChromo())
+
+        index = 0
+        chromoIndex = 0
+        for gene in geneList:
+            percentageTest = random.random()
+            if(percentageTest < percentage):
+                chromoIndex = int(index / self.chromoSize)
+                geneIndex = index % self.chromoSize
+                value = population[chromoIndex].getGene(index)
+                # print(value)
+
+            
+            if(index >= self.chromoSize - 1):
+                index = 0
+                chromoIndex = chromoIndex + 1
             else:
-                newGene = 0
+                index = index + 1
+        return population
 
-            offspring.changeGene(newGene, position)
-        return offspring
+
+
+    # def mutateIndividual(self, individual, percentage):
+    #     offspring = Chromosome(individual.getChromo())
+    #     usedPositions = []
+    #     for i in range(self.chromoSize * percentage):
+    #         while True:
+    #             position = random.randint(0, self.chromoSize)
+    #             if(not position in usedPositions):
+    #                 break
+
+    #         gene = offspring.getGene(position)
+    #         if(gene == 1):
+    #             newGene = 0
+    #         elif(gene == 0):
+    #             newGene = 1
+    #         else:
+    #             newGene = 0
+
+    #         offspring.changeGene(newGene, position)
+    #     return offspring
+
+    def crossover(self, population, percentage):
+        newGeneration = []
+        parentPairs = self.rouletteSelectParents(population, 100)
+        for parents in parentPairs:
+
+            # create offspring
+            for i in range(self.CROSSOVER_OFFSPRING_COUNT):
+                offspring = self.crossoverParents(parents[0], parents[1])
+                # limit by breed percentage
+                percentageTest = random.random()            
+                if(percentageTest < percentage):
+                    newGeneration.append(offspring)
+
+                # TODO random chance for pure copy of one parent
+
+        return newGeneration
 
     def crossoverParents(self, parent1, parent2):
         while True:
@@ -144,23 +268,30 @@ class Evolution(object):
             place2 = random.randint(0, self.chromoSize)
             if(place1 > place2):
                 break
-        offspring = Chromosome([0] * self.chromoSize)
-        interator = 0
         
-        for i in parent1[0:place1] + parent2[place1:place2] + parent1[place2:self.chromoSize]:
-            offspring.changeGene(i, interator)
-            interator = interator + 1
+        newChromosome = parent1.chromo[0:place1] + parent2.chromo[place1:place2] + parent1.chromo[place2:self.chromoSize]
+        offspring = Chromosome(newChromosome)
 
         return offspring
+
     def exportPopulation(self):
         f = open('lastState.txt', 'w')
+        outputString = ""
         for chromo in self.population:
-            f.write(chromo.toString() + "\n")
-        f.close
+            outputString = outputString + chromo.toString() + "\n"
+        f.write(outputString[:-1])
+        f.close()
 
     def loadPopulation(self):
         f = open('lastState.txt', 'r')
+        population = []
         for line in f:
-            single = Chromosome(len(line))
+            single = Chromosome()
             single.fromString(line)
-            self.population.append(single)
+            population.append(single)
+        self.population = population
+        self.importedGeneration = True
+
+    def checkIfImported(self):
+        self.importedGeneration = not self.importedGeneration
+        return not self.importedGeneration

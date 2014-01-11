@@ -1,6 +1,5 @@
 from calendar import monthrange
 from datetime import date
-from bitstring import BitArray
 import math
 
 class Shiftplan(object):
@@ -57,17 +56,16 @@ class Shiftplan(object):
         iterator = 0
         traitStart = 0
         for i in range(self.days * self.workers * self.bitSize):
-            if i % self.bitSize == 0:
-                binaryString = ''
-                for j in ch.getChromo()[traitStart:i]:
-                    binaryString = binaryString + str(j)
-
-                b = BitArray(bin=binaryString)
-                b.uint
-            else:
+            if (i + 1) % self.bitSize == 0:
+                decimalValue = 0
+                power = 0
+                bitList = ch.chromo[traitStart:i:][::-1]
+                for j in bitList:
+                    decimalValue = j * pow(2, power) + decimalValue
+                    power = power + 1                     
+                processedChromo.append(decimalValue)
                 traitStart = i
             
-
         self.unloadChromosome()
         for i in range(self.days):
             self.shifts.append(processedChromo[i::self.days])
@@ -169,7 +167,7 @@ class Shiftplan(object):
         #     score = 0
 
         if(score < 0):
-            return 0
+            return 1
         else:
             return score
 

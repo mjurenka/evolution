@@ -37,3 +37,16 @@ class Chromosome(object):
 
 	def getFitness(self):
 		return self.fitness
+
+	def toString(self):
+		out = ""
+		for i in self.chromo:
+			out = out + str(i)
+		return out
+
+	def fromString(self, chString):
+		ch = []
+		for i in chString[:-1]:
+			ch.append(int(i))
+		self.chromo = ch
+		print(ch)
