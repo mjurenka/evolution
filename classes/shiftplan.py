@@ -18,18 +18,18 @@ class Shiftplan(object):
 
     SCORE_INITIAL = 1000
 
-    SCORE_PENALIZE_LATE_OVER_LIMIT = -10
-    SCORE_PENALIZE_LATE_WEEKEND = -20
+    SCORE_PENALIZE_LATE_OVER_LIMIT = -20
+    SCORE_PENALIZE_LATE_WEEKEND = -50
     SCORE_PENALIZE_LATE_UNDER_LIMIT = -20
 
-    SCORE_PENALIZE_ONCALL_OVER_LIMIT = -10
+    SCORE_PENALIZE_ONCALL_OVER_LIMIT = -20
     SCORE_PENALIZE_ONCALL_UNDER_LIMIT = -20
 
-    SCORE_PENALIZE_SPACING_ONCALL = -50
-    SCORE_PENALIZE_SPACING_LATE = -50
+    SCORE_PENALIZE_SPACING_ONCALL = -30
+    SCORE_PENALIZE_SPACING_LATE = -30
 
-    SCORE_AWARD_LATE_EXACT_LIMIT = 0
-    SCORE_AWARD_ONCALL_EXACT_LIMIT = 0
+    SCORE_AWARD_LATE_EXACT_LIMIT = 10
+    SCORE_AWARD_ONCALL_EXACT_LIMIT = 10
 
 
     # class variables
@@ -40,6 +40,7 @@ class Shiftplan(object):
     bitSize = 0
     shifts = []
     shiftsWorkers = []
+    shiftChromo = []
 
     def setParameters(self, Year, Month, numberOfWorkers, bitSize):
         self.year = Year
@@ -73,6 +74,7 @@ class Shiftplan(object):
             start = i * self.days
             end = start + self.days
             self.shiftsWorkers.append(processedChromo[start:end])
+        self.shiftChromo = processedChromo
 
     def unloadChromosome(self):
         self.shifts = []
@@ -90,7 +92,7 @@ class Shiftplan(object):
         pass
 
     def checkProximitySameTraits(self, chromosome, checkTrait, minProximity):
-        indexes = [i for i, x in enumerate(chromosome.chromo) if x == checkTrait]
+        indexes = [i for i, x in enumerate(self.shiftChromo) if x == checkTrait]
         first = True
         for i, x in enumerate(indexes):
             if(not first):

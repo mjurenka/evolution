@@ -12,13 +12,14 @@ class Evolution(object):
     """docstring for Evolution"""
 
     # CONSTANTS
-    INITIAL_POPULATION_SIZE = 100
+    INITIAL_POPULATION_SIZE = 200
     SELECT_BEST_COUNT = 2
     REMOVE_WORST_COUNT = 5
-    CROSSOVER_OFFSPRING_COUNT = 3
-
-    CROSSOVER_PERCENTAGE = .85
-    MUTATE_PERCENTAGE = .025
+    
+    CROSSOVER_PERCENTAGE = .87
+    CROSSOVER_OFFSPRING_COUNT = 2
+    CROSSOVER_PARENT_PAIR_COUNT = 110
+    MUTATE_PERCENTAGE = .02
     # CLASS VARIABLES
     parCount = 0
     parBitSize = 0
@@ -155,11 +156,7 @@ class Evolution(object):
         fitness = 0
         lastDelta = 0
         for i in range(evolutionCount):
-            if(fitness == self.getBestFitness()):
-                lastDelta = lastDelta + 1
-            else:
-                fitness = self.getBestFitness()
-                lastDelta = 0
+            
 
             print("Evolution: " + str(i) + " ")
 
@@ -167,6 +164,12 @@ class Evolution(object):
             self.evolveSingle()
             elapsed_time = time.time() - start_time
             
+            if(fitness == self.getBestFitness()):
+                lastDelta = lastDelta + 1
+            else:
+                fitness = self.getBestFitness()
+                lastDelta = 0
+
             print("F: " + str(self.getBestFitness()) + "  ( " + str(lastDelta) + " )   " + str(elapsed_time) + " sec")
             self.counter += 1
 
@@ -247,7 +250,7 @@ class Evolution(object):
 
     def crossover(self, population, percentage):
         newGeneration = []
-        parentPairs = self.rouletteSelectParents(population, 100)
+        parentPairs = self.rouletteSelectParents(population, self.CROSSOVER_PARENT_PAIR_COUNT)
         for parents in parentPairs:
 
             # create offspring

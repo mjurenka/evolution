@@ -13,7 +13,7 @@ if  __name__ =='__main__':
 	parCount = sh.getParameterCount()
 	# print(parCount)
 	evolution = Evolution(parCount, 2, sh.evaluate)
-	evolution.loadPopulation()
+	# evolution.loadPopulation()
 
 	evolution.evolve(500)
 
